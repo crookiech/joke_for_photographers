@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}
+	{{ article.title }}
+{% endblock %}
+
+{% block body %}
+	<h1>{{ article.title }}</h1>
+	<div class="container">
+        <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="Изображение поста">
+        <p class="text-break">{{ article.text }}</p>
+        <p><small class="text-muted">Дата: {{ article.date.date() }}</small></p>
+        <a href="/main/{{ article.id }}/delete" class="btn btn-danger">Удалить</a>
+        <a href="/main/{{ article.id }}/edit" class="btn btn-warning">Редактировать</a>
+	</div>
+{% endblock %}
