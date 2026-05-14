@@ -1,2 +1,3 @@
 /.vscode/
 /web_app/venv/
+*.db

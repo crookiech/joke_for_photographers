@@ -1,44 +1,51 @@
 {% extends 'base.html' %}
 
 {% block title %}
-	Главная страница
+    Главная страница
 {% endblock %}
 
 {% block body %}
-	<style>
-		.card_style {
-			height: 200px;
-			object-fit: cover;
-		}
-		.title_style {
-			display: -webkit-box;
-			-webkit-line-clamp: 2;
-			-webkit-box-orient: vertical;
-			overflow: hidden;
+    <style>
+        .card-img-top {
+            height: 200px;
+            object-fit: cover;
+        }
+        .title-clamp {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
 			line-clamp: 2;
-		}
-		.text_style {
-			display: -webkit-box;
-			-webkit-line-clamp: 3;
-			-webkit-box-orient: vertical;
-			overflow: hidden;
+        }
+        .text-clamp {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
 			line-clamp: 3;
-		}
-	</style>
-	<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-		{% for element in articles %}
-		<div class="col">
-			<a href="/main/{{ element.id }}" class="text-decoration-none text-dark">
-				<div class="card" style="min-height: 300px;">
-					<img src="{{ url_for('static', filename='images/forest.jpg') }}" class="card-img-top" alt="Изображение поста">
-					<div class="card-body">
-						<h5 class="card-title title_style">{{ element.title }}</h5>
-						<p class="card-text text_style">{{ element.intro }}</p>
-						<p class="card-text mt-auto"><small class="text-muted">Дата: {{ element.date.date() }}</small></p>
-					</div>
-				</div>
-			</a>
-		</div>
-		{% endfor %}
-	</div>
+        }
+    </style>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+        {% for element in articles %}
+        <div class="col">
+            <a href="/main/{{ element.id }}" class="text-decoration-none">
+                <div class="card" style="min-height: 300px;">
+                    {% if element.images %}
+                        {% set first_image = element.images.split(',')[0] %}
+                        <img src="{{ url_for('static', filename=first_image) }}" class="card-img-top" alt="{{ element.title }}">
+                    {% else %}
+                        <img src="https://via.placeholder.com/300x200?text=No+Image" class="card-img-top" alt="Нет изображения">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title title-clamp mb-1">{{ element.title }}</h5>
+                        <p class="card-text text-clamp mb-1">{{ element.description }}</p>
+                        <p class="card-text text-muted mb-0">Дата съёмки: {{ element.shoot_date.strftime('%d.%m.%Y') }}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
 {% endblock %}
+

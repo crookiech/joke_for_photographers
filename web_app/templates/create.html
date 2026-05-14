@@ -1,14 +1,583 @@
 {% extends 'base.html' %}
 
 {% block title %}
-	Создание
+    Создание
 {% endblock %}
 
 {% block body %}
-    <form method="post">
-        <input type="text" name="title" id="title" class="form-control" placeholder="Введите название"><br>
-        <textarea name="intro" id="intro" class="form-control" placeholder="Введите описание"></textarea><br>
-        <textarea name="text" id="text" class="form-control" placeholder="Введите текст"></textarea><br>
-        <input type="submit" class="btn btn-success" value="Создать">
-    </form>
+    <style>
+        .images-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: flex-start;
+            align-items: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .image-item {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        
+        .image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .remove-image {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255,0,0,0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s;
+            z-index: 2;
+        }
+        
+        .remove-image:hover {
+            background: red;
+            transform: scale(1.1);
+        }
+        
+        .add-image-box {
+            width: 150px;
+            height: 150px;
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #f0f8ff;
+            flex-shrink: 0;
+        }
+        
+        .add-image-box:hover {
+            background-color: #e0f0ff;
+            border-color: #0056b3;
+            transform: scale(1.02);
+        }
+        
+        .plus-icon {
+            font-size: 48px;
+            color: #007bff;
+        }
+        
+        .add-text {
+            margin-top: 10px;
+            color: #007bff;
+            font-size: 14px;
+        }
+        
+        .hidden-file-input {
+            display: none;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s;
+        }
+        
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .drawing-container {
+            margin: 20px 0;
+        }
+        
+        .drawing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .drawing-tools {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        canvas {
+            border: 2px solid #333;
+            cursor: crosshair;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .brush-size-value {
+            display: inline-block;
+            min-width: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .submit-btn-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .form-control {
+            margin-bottom: 15px;
+        }
+        
+        .gray-area {
+            background-color: #f0f0f0;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .drawing-badge {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: rgba(0,123,255,0.9);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            z-index: 1;
+        }
+
+        .date-input {
+            margin-bottom: 15px;
+        }
+        
+        .date-input label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .date-input input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .date-input input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0,123,255,0.3);
+        }
+    </style>
+
+    <div>
+        <h1 class="mb-4" style="padding-bottom: 8px; border-bottom: 1px solid #999">Создание новой съемки</h1>
+        
+        <form method="post" enctype="multipart/form-data" id="articleForm">
+            <div class="form-floating mb-3">
+                <input type="text" name="title" id="title" class="form-control" placeholder="Название">
+                <label for="title" class="text-muted">Название</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <textarea name="description" id="description" class="form-control" placeholder="Описание" required rows="3"></textarea>
+                <label for="description" class="text-muted">Описание</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <textarea name="props" id="props" class="form-control" placeholder="Реквизит" required rows="3"></textarea>
+                <label for="props" class="text-muted">Реквизит</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <textarea name="location" id="location" class="form-control" placeholder="Введите локацию" required rows="3"></textarea>
+                <label for="location" class="text-muted">Локация</label>
+            </div>
+
+            <div class="date-input">
+                <p for="shoot_date" class="mb-2">Дата проведения съёмки:</p>
+                <input type="date" name="shoot_date" id="shoot_date" required>
+            </div>
+
+            <div class="gray-area">
+                <div class="images-grid" id="photosGrid">
+                    <div class="add-image-box" id="addPhotoButton">
+                        <div class="plus-icon">+</div>
+                        <div class="add-text">Добавить фото</div>
+                    </div>
+                </div>
+                
+                <div class="images-grid" id="drawingsGrid">
+                    <div class="add-image-box" id="addDrawingButton">
+                        <div class="plus-icon">+</div>
+                        <div class="add-text">Добавить рисунок</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="submit-btn-wrapper">
+                <input type="submit" class="btn btn-success submit-btn" value="Создать пост">
+            </div>
+        </form>
+    </div>
+
+    <div id="drawingModal" class="modal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between;">
+                <h3>Холст для рисования</h3>
+                <span class="close">&times;</span>
+            </div>
+            
+            <div class="drawing-container">
+                <div class="drawing-header">
+                    <div class="drawing-tools">
+                        <button type="button" class="btn btn-sm btn-dark" onclick="setColor('black')"></button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="setColor('red')"></button>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="setColor('blue')"></button>
+                        <button type="button" class="btn btn-sm btn-success" onclick="setColor('green')"></button>
+                        <button type="button" class="btn btn-sm btn-warning" onclick="setColor('orange')"></button>
+                    </div>
+                </div>
+                <div class="drawing-tools" style="margin-bottom: 10px;">
+                    <span>Толщина кисти: <span id="brushSizeDisplay" class="brush-size-value">3</span> px</span>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="changeSize(-2)">-</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="changeSize(2)">+</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearCanvas()">Очистить холст</button>
+                </div>
+                
+                <canvas id="drawingCanvas" width="600" height="400" style="width: 100%; height: auto; max-width: 600px; border: 1px solid #333;"></canvas>
+            </div>
+            
+            <div class="d-flex justify-content-center gap-2">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+                <button type="button" class="btn btn-success" onclick="saveDrawing()">Добавить</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="photoFileInput" multiple accept="image/*" class="hidden-file-input">
+
+    <script>
+        let photoFiles = [];
+        const photosGrid = document.getElementById('photosGrid');
+        const addPhotoButton = document.getElementById('addPhotoButton');
+        const photoFileInput = document.getElementById('photoFileInput');
+        
+        addPhotoButton.addEventListener('click', function() {
+            photoFileInput.click();
+        });
+        
+        photoFileInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            
+            files.forEach(function(file) {
+                if (file.type.startsWith('image/')) {
+                    photoFiles.push(file);
+                    displayPhoto(file);
+                }
+            });
+            
+            photoFileInput.value = '';
+        });
+        
+        function displayPhoto(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const imageItem = document.createElement('div');
+                imageItem.className = 'image-item';
+                
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-image';
+                removeBtn.innerHTML = '×';
+                removeBtn.onclick = function() {
+                    removePhoto(imageItem, file);
+                };
+                
+                imageItem.appendChild(img);
+                imageItem.appendChild(removeBtn);
+                
+                photosGrid.insertBefore(imageItem, addPhotoButton);
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        function removePhoto(imageItem, file) {
+            const index = photoFiles.indexOf(file);
+            if (index > -1) {
+                photoFiles.splice(index, 1);
+            }
+            imageItem.remove();
+        }
+        
+        let drawingFiles = [];
+        const drawingsGrid = document.getElementById('drawingsGrid');
+        const addDrawingButton = document.getElementById('addDrawingButton');
+        
+        let modal = document.getElementById('drawingModal');
+        let closeBtn = document.querySelector('.close');
+        
+        addDrawingButton.addEventListener('click', function() {
+            modal.style.display = 'block';
+            initCanvas();
+        });
+        
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+        
+        closeBtn.onclick = function() {
+            closeModal();
+        };
+        
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        };
+        
+        let canvas = document.getElementById('drawingCanvas');
+        let ctx = canvas.getContext('2d');
+        let drawing = false;
+        let currentColor = 'black';
+        let brushSize = 3;
+        
+        function initCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = brushSize;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+        
+        function startDrawing(e) {
+            drawing = true;
+            ctx.beginPath();
+            const coords = getCoordinates(e);
+            ctx.moveTo(coords.x, coords.y);
+            ctx.stroke();
+        }
+        
+        function draw(e) {
+            if (!drawing) return;
+            e.preventDefault();
+            const coords = getCoordinates(e);
+            ctx.lineTo(coords.x, coords.y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(coords.x, coords.y);
+        }
+        
+        function stopDrawing() {
+            drawing = false;
+            ctx.beginPath();
+        }
+        
+        function getCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let clientX, clientY;
+            
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            let x = (clientX - rect.left) * scaleX;
+            let y = (clientY - rect.top) * scaleY;
+            
+            x = Math.max(0, Math.min(canvas.width, x));
+            y = Math.max(0, Math.min(canvas.height, y));
+            
+            return { x: x, y: y };
+        }
+        
+        function setColor(color) {
+            currentColor = color;
+            ctx.strokeStyle = currentColor;
+            document.getElementById('colorPreview').style.backgroundColor = currentColor;
+        }
+        
+        function changeSize(delta) {
+            brushSize = Math.max(1, Math.min(30, brushSize + delta));
+            ctx.lineWidth = brushSize;
+            document.getElementById('brushSizeDisplay').innerText = brushSize;
+        }
+        
+        function clearCanvas() {
+            if (confirm('Очистить холст?')) {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = currentColor;
+                ctx.strokeStyle = currentColor;
+            }
+        }
+        
+        function saveDrawing() {
+            canvas.toBlob(function(blob) {
+                const fileName = `drawing_${Date.now()}.png`;
+                const file = new File([blob], fileName, { type: 'image/png' });
+                
+                drawingFiles.push(file);
+                displayDrawing(file);
+                closeModal();
+            }, 'image/png');
+        }
+        
+        function displayDrawing(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const imageItem = document.createElement('div');
+                imageItem.className = 'image-item';
+                
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-image';
+                removeBtn.innerHTML = '×';
+                removeBtn.onclick = function() {
+                    removeDrawing(imageItem, file);
+                };
+                
+                const badge = document.createElement('div');
+                badge.className = 'drawing-badge';
+                badge.innerHTML = 'Рисунок';
+                
+                imageItem.appendChild(img);
+                imageItem.appendChild(badge);
+                imageItem.appendChild(removeBtn);
+                
+                drawingsGrid.insertBefore(imageItem, addDrawingButton);
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        function removeDrawing(imageItem, file) {
+            const index = drawingFiles.indexOf(file);
+            if (index > -1) {
+                drawingFiles.splice(index, 1);
+            }
+            imageItem.remove();
+        }
+        
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseleave', stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('touchcancel', stopDrawing);
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        });
+        
+        const articleForm = document.getElementById('articleForm');
+        
+        articleForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('title', document.getElementById('title').value);
+            formData.append('description', document.getElementById('description').value);
+            formData.append('location', document.getElementById('location').value);
+            formData.append('props', document.getElementById('props').value);
+            formData.append('shoot_date', document.getElementById('shoot_date').value);
+            
+            photoFiles.forEach(function(file) {
+                formData.append('images[]', file);
+            });
+            
+            drawingFiles.forEach(function(file) {
+                formData.append('drawings[]', file);
+            });
+            
+            try {
+                const response = await fetch('/create', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    const error = await response.location();
+                    alert('Ошибка при создании поста: ' + error);
+                }
+            } catch (error) {
+                alert('Ошибка при отправке: ' + error);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateInput = document.getElementById('shoot_date');
+            if (dateInput && !dateInput.value) {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${yyyy}-${mm}-${dd}`;
+            }
+        });
+    </script>
 {% endblock %}
