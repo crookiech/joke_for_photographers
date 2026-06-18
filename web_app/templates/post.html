@@ -18,7 +18,6 @@
             flex-wrap: wrap;
         }
         
-        /* Левая колонка с фотографиями и рисунками */
         .photos-column {
             flex: 1;
             min-width: 300px;
@@ -34,13 +33,20 @@
         .photo-item {
             position: relative;
             width: 100%;
-            aspect-ratio: 1 / 1;
+            padding-bottom: 100%;
             overflow: hidden;
             border-radius: 10px;
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             transition: transform 0.3s, box-shadow 0.3s;
             background-color: #f8f9fa;
+            outline: none;
+            border: none;
+        }
+        
+        .photo-item:focus {
+            outline: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
         .photo-item:hover {
@@ -49,10 +55,33 @@
         }
         
         .photo-item img {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
             transition: transform 0.3s;
+            display: block;
+            border: none;
+            outline: none;
+        }
+        
+        .photo-item img:focus,
+        .photo-item img:active {
+            outline: none;
+            border: none;
+        }
+        
+        img {
+            border: none;
+            outline: none;
+        }
+        
+        img:focus,
+        img:active {
+            border: none;
+            outline: none;
         }
         
         .photo-item:hover img {
@@ -69,10 +98,11 @@
             border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
-            z-index: 1;
+            z-index: 2;
             display: flex;
             align-items: center;
             gap: 5px;
+            pointer-events: none;
         }
         
         .info-column {
@@ -93,6 +123,12 @@
             display: flex;
             gap: 10px;
             margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .action-buttons .btn {
+            min-width: 150px;
         }
         
         .modal {
@@ -103,31 +139,76 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.9);
+            background-color: rgba(0,0,0,0.92);
+            cursor: pointer;
         }
         
         .modal-content {
-            margin: auto;
-            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             max-width: 90%;
             max-height: 90%;
-            margin-top: 5%;
-            border-radius: 10px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+            background-color: transparent;
+            padding: 0;
+            border: none;
+            outline: none;
+        }
+        
+        .modal-content:focus {
+            outline: none;
+            border: none;
         }
         
         .close {
             position: absolute;
-            top: 15px;
+            top: 20px;
             right: 35px;
             color: #f1f1f1;
             font-size: 40px;
             font-weight: bold;
             cursor: pointer;
             z-index: 1001;
+            transition: 0.3s;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.5);
+            border-radius: 50%;
+            border: none;
+            outline: none;
         }
         
         .close:hover {
-            color: #bbb;
+            color: #fff;
+            transform: rotate(90deg);
+            background: rgba(0,0,0,0.8);
+        }
+        
+        .close:focus {
+            outline: none;
+            border: none;
+        }
+        
+        .modal-info {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 20px;
+            border-radius: 20px;
+            pointer-events: none;
         }
         
         .no-photos {
@@ -144,20 +225,38 @@
             color: #999;
             font-style: italic;
         }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal.show {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        img {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-user-drag: none;
+            -moz-user-drag: none;
+            user-drag: none;
+        }
     </style>
 
-    <div>
+    <div class="post-container">
         <h1 class="mb-4" style="padding-bottom: 8px; border-bottom: 1px solid #999">{{ article.title }}</h1>
-        <div style="padding-bottom: 8px; display: flex; gap: 50px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 300px;">
-                
+        <div class="post-content">
+            <div class="photos-column">
                 {% if article.images %}
                     {% set images_list = article.images.split(',') %}
                     <div class="photos-grid">
                         {% for image in images_list %}
                             {% if image.strip() %}
                                 <div class="photo-item" onclick="openModal('{{ url_for('static', filename=image.strip()) }}', 'Фото {{ loop.index }}')">
-                                    <img src="{{ url_for('static', filename=image.strip()) }}" alt="Фото {{ loop.index }}">
+                                    <img src="{{ url_for('static', filename=image.strip()) }}" alt="Фото {{ loop.index }}" loading="lazy">
                                 </div>
                             {% endif %}
                         {% endfor %}
@@ -174,7 +273,7 @@
                         {% for drawing in drawings_list %}
                             {% if drawing.strip() %}
                                 <div class="photo-item" onclick="openModal('{{ url_for('static', filename=drawing.strip()) }}', 'Рисунок {{ loop.index }}')">
-                                    <img src="{{ url_for('static', filename=drawing.strip()) }}" alt="Рисунок {{ loop.index }}">
+                                    <img src="{{ url_for('static', filename=drawing.strip()) }}" alt="Рисунок {{ loop.index }}" loading="lazy">
                                 </div>
                             {% endif %}
                         {% endfor %}
@@ -186,7 +285,7 @@
                 {% endif %}
             </div>
             
-            <div style="flex: 1;">
+            <div class="info-column">
                 <div class="post-description">
                     <strong>Описание:</strong>
                     <p>{{ article.description }}</p>
@@ -207,45 +306,54 @@
                 </div>
             </div>
         </div>
-        <div class="d-flex justify-content-center gap-2">
-            <a href="/main/{{ article.id }}/edit" class="btn btn-warning">Редактировать</a>
-            <a href="/main/{{ article.id }}/delete" class="btn btn-danger" onclick="return confirm('Вы уверены, что хотите удалить эту съёмку?')">Удалить</a>
+        
+        <div class="action-buttons">
+            {% if current_user.is_authenticated and current_user.id == article.user_id %}
+                <a href="/main/{{ article.id }}/edit" class="btn btn-warning">Редактировать</a>
+                <a href="/main/{{ article.id }}/pdf" class="btn btn-warning" target="_blank">PDF</a>
+                <form action="/main/{{ article.id }}/delete" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Вы уверены, что хотите удалить эту съёмку?')">Удалить</button>
+                </form>
+            {% endif %}
         </div>
     </div>
     
-    <div id="imageModal" class="modal">
-        <span class="close" onclick="closeModal()">&times;</span>
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <span class="close" onclick="event.stopPropagation(); closeModal();">×</span>
         <img class="modal-content" id="modalImage">
+        <div class="modal-info" id="modalInfo">Нажмите для закрытия</div>
     </div>
     
     <script>
         function openModal(src, title) {
             var modal = document.getElementById('imageModal');
             var modalImg = document.getElementById('modalImage');
-            var modalCaption = document.getElementById('modalCaption');
-            modal.style.display = 'block';
+            var modalInfo = document.getElementById('modalInfo');
+            
             modalImg.src = src;
-            modalCaption.innerHTML = title || 'Изображение';
-        }
-        
-        function openModalDrawing(src, title) {
-            var modal = document.getElementById('imageModal');
-            var modalImg = document.getElementById('modalImage');
-            var modalCaption = document.getElementById('modalCaption');
+            modalInfo.textContent = title || 'Изображение';
             modal.style.display = 'block';
-            modalImg.src = src;
-            modalCaption.innerHTML = title || 'Рисунок';
+            modal.className = 'modal show';
+            
+            document.body.style.overflow = 'hidden';
         }
         
         function closeModal() {
-            document.getElementById('imageModal').style.display = 'none';
+            var modal = document.getElementById('imageModal');
+            modal.style.display = 'none';
+            modal.className = 'modal';
+            
+            document.body.style.overflow = 'auto';
+            
+            setTimeout(function() {
+                document.getElementById('modalImage').src = '';
+            }, 300);
         }
         
-        window.onclick = function(event) {
-            var modal = document.getElementById('imageModal');
-            if (event.target == modal) {
-                modal.style.display = 'none';
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
             }
-        };
+        });
     </script>
 {% endblock %}

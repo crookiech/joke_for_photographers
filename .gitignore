@@ -1,3 +1,6 @@
 /.vscode/
 /web_app/venv/
 *.db
+/web_app/instance/
+/web_app/static/
+/web_app/__pycache__/
