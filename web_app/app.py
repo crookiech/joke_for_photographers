@@ -18,11 +18,11 @@ from fpdf import FPDF
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'your-secret-key-here-change-in-production'
+app.config['SECRET_KEY'] = 'secret-key'
 
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -108,6 +108,7 @@ def sign_up():
         confirm_password = request.form.get('confirm_password')
         
         existing_user = User.query.filter_by(email=email).first()
+
         if existing_user:
             flash('Пользователь с таким email уже существует', 'danger')
             return redirect(url_for('sign_up'))
@@ -347,14 +348,14 @@ def generate_pdf(id):
     font_name = 'DejaVu' if font_loaded else 'Helvetica'
 
     pdf.set_font(font_name, '', 16)
-    pdf.cell(0, 10, f'{article.title}', new_x='LMARGIN', new_y='NEXT', align='C')
+    pdf.multi_cell(0, 10, f'{article.title}', new_x='LMARGIN', new_y='NEXT', align='C')
     pdf.set_font(font_name, '', 12)
-    pdf.cell(0, 10, f'Дата съемки: {article.shoot_date.strftime("%d.%m.%Y")}', new_x='LMARGIN', new_y='NEXT')
-    pdf.cell(0, 10, f'Описание: {article.description}', new_x='LMARGIN', new_y='NEXT')
-    pdf.cell(0, 10, f'Реквизит: {article.props}', new_x='LMARGIN', new_y='NEXT')
-    pdf.cell(0, 10, f'Локация: {article.location}', new_x='LMARGIN', new_y='NEXT')
+    pdf.multi_cell(0, 10, f'Дата съемки: {article.shoot_date.strftime("%d.%m.%Y")}', new_x='LMARGIN', new_y='NEXT')
+    pdf.multi_cell(0, 10, f'Описание: {article.description}', new_x='LMARGIN', new_y='NEXT')
+    pdf.multi_cell(0, 10, f'Реквизит: {article.props}', new_x='LMARGIN', new_y='NEXT')
+    pdf.multi_cell(0, 10, f'Локация: {article.location}', new_x='LMARGIN', new_y='NEXT')
     if article.images:
-        pdf.cell(0, 10, 'Мудборд и референсы:', new_x='LMARGIN', new_y='NEXT')
+        pdf.multi_cell(0, 10, 'Мудборд и референсы:', new_x='LMARGIN', new_y='NEXT')
         images_list = article.images.split(',')
         for img_path in images_list[:4]:
             if img_path.strip():
@@ -367,7 +368,7 @@ def generate_pdf(id):
                         print(f"Ошибка загрузки изображения {full_path}: {e}")
     if article.drawings:
         drawings_list = article.drawings.split(',')
-        for img_path in drawings_list[:4]:
+        for img_path in drawings_list:
             if img_path.strip():
                 full_path = os.path.join('static', img_path.strip())
                 if os.path.exists(full_path):
